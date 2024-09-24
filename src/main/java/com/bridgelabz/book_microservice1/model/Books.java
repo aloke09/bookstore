@@ -18,11 +18,11 @@ public class Books
     private String bookName;
     private String bookAuthor;
     private String bookDescription;
-    private String type;
+
     @Lob
     private byte[] bookLogo;
-    private double bookPrice;
-    private int bookQuantity;
+    private long bookPrice;
+    private long bookQuantity;
 
 
 }

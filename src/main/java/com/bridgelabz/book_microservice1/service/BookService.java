@@ -13,6 +13,11 @@ public interface BookService
     Books getBookDetailsById(Long id);
     String deleteBookDetailsById(Long id);
     Books updateBookLogoById(Long id,MultipartFile file) throws IOException;
-    Books ChangeBookQuantity(Long bookid,int quantity);
-    Books ChangeBookPrice(Long bookid,double price);
+
+    Books ChangeBookQuantity(Long bookid,Long quantity);
+    Books ChangeBookPrice(Long bookid,Long price);
+
+
+    String minusAddToCartQuantity(Long id, Long qty);
+    String removeFromCartAddToBook(Long bookId,Long qty);
 }

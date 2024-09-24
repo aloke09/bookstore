@@ -63,9 +63,9 @@ public class BookServiceImpl implements BookService
     }
 
     @Override
-    public Books ChangeBookQuantity(Long id, int quantity)
+    public Books ChangeBookQuantity(Long bookid, Long quantity)
     {
-        Optional<Books> optionalBook = bookRepository.findById(id);
+        Optional<Books> optionalBook = bookRepository.findById(bookid);
         if (optionalBook.isEmpty())
         {
             return null;
@@ -76,7 +76,7 @@ public class BookServiceImpl implements BookService
     }
 
     @Override
-    public Books ChangeBookPrice(Long id, double price)
+    public Books ChangeBookPrice(Long id, Long price)
     {
         Optional<Books> optionalBook = bookRepository.findById(id);
         if (optionalBook.isEmpty())
@@ -88,5 +88,36 @@ public class BookServiceImpl implements BookService
         return bookRepository.save(books);
     }
 
+    @Override
+    public String minusAddToCartQuantity(Long id, Long qty)
+    {
+        Optional<Books> optionalBook = bookRepository.findById(id);
+        if (optionalBook.isEmpty())
+        {
+            return "qty not deducted from book table";
+        }
+        else
+        {
+            Books books = optionalBook.get();
+            long afterAddedToCartQuantity = books.getBookQuantity() - qty;
+            books.setBookQuantity(afterAddedToCartQuantity);//minus from book table
+            bookRepository.save(books);
+            return "qty deducted from book table";
+        }
+    }
 
+    @Override
+    public String removeFromCartAddToBook(Long bookId,Long qty)
+    {
+        Optional<Books> optionalBook = bookRepository.findById(bookId);
+        if (optionalBook.isPresent())
+        {
+            Books books = optionalBook.get();
+            long updatedQty = books.getBookQuantity() + qty;
+            books.setBookQuantity(updatedQty);
+            bookRepository.save(books);
+            return "qty added back to book table";
+        }
+        return "qty not added back to book table";
+    }
 }

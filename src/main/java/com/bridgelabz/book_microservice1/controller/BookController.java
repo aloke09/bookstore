@@ -1,5 +1,7 @@
 package com.bridgelabz.book_microservice1.controller;
 
+import com.bridgelabz.book_microservice1.client.UserServiceClient;
+import com.bridgelabz.book_microservice1.external.User;
 import com.bridgelabz.book_microservice1.model.Books;
 import com.bridgelabz.book_microservice1.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -19,23 +20,40 @@ public class BookController
     @Autowired
     private BookService bookService;
 
+    @Autowired
+    private UserServiceClient userServiceClient;
+
+    private User getAuthenticatedAdminUser(String authHeader) {
+        User user = userServiceClient.getUser(authHeader);
+        System.out.println(user);
+        if(user!=null && user.getRole().equals("admin"))
+        {
+            return user;
+        }
+        return null;
+    }
+
+
     @PostMapping(value="/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> addBookWithLogo(@RequestPart("books") Books books,
-                                             @RequestPart("booklogo") MultipartFile file)
+    public ResponseEntity<?> addBookWithLogoWithToken(@RequestHeader("Authorization") String authHeader,
+                                                      @RequestPart("books") Books books,
+                                                      @RequestPart("booklogo") MultipartFile file)
     {
         try
         {
-            System.out.println(books);
-            Books books1 = bookService.addBook(books, file);
-            return new ResponseEntity<>(books1, HttpStatus.CREATED);
+            User isAdmin=getAuthenticatedAdminUser(authHeader);
+            if(isAdmin!=null)
+            {
+                Books books1 = bookService.addBook(books, file);
+                return new ResponseEntity<>(books1, HttpStatus.CREATED);
+            } else {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-
         }
-
     }
 
     @GetMapping("/all")
@@ -58,68 +76,111 @@ public class BookController
         }
     }
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> deleteById(@PathVariable Long id)
+    public ResponseEntity<String> deleteById(@RequestHeader("Authorization") String authHeader, @PathVariable Long id)
     {
-        String s = bookService.deleteBookDetailsById(id);
-        if(s.equals("delete successfully!!"))
+        User isAdmin=getAuthenticatedAdminUser(authHeader);
+        if(isAdmin!=null)
         {
-            return new ResponseEntity<>(s,HttpStatus.OK);
-        }
-        else
-        {
-            return new ResponseEntity<>("book id not found",HttpStatus.NOT_FOUND);
+            String s = bookService.deleteBookDetailsById(id);
+            if(s.equals("delete successfully!!"))
+            {
+                return new ResponseEntity<>(s,HttpStatus.OK);
+            }
+            else
+            {
+                return new ResponseEntity<>("book id not found",HttpStatus.NOT_FOUND);
+            }
+        } else {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
 
     @PutMapping(value="/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> updateBookLogoById(@RequestPart("booklogo") MultipartFile file,
+    public ResponseEntity<?> updateBookLogoById(@RequestHeader("Authorization") String authHeader, @RequestPart("booklogo") MultipartFile file,
                                                 @PathVariable Long id) {
-        try {
-            System.out.println("Book ID ---> " + id);
+        try
+        {
+            User isAdmin=getAuthenticatedAdminUser(authHeader);
+            if(isAdmin!=null )
+            {
+                System.out.println("Book ID ---> " + id);
+                if (file.isEmpty()) {
+                    return new ResponseEntity<>("File is empty, please upload a valid image.", HttpStatus.BAD_REQUEST);
+                }
 
-            // Check if the file is not empty
-            if (file.isEmpty()) {
-                return new ResponseEntity<>("File is empty, please upload a valid image.", HttpStatus.BAD_REQUEST);
-            }
-
-            Books books = bookService.updateBookLogoById(id, file);
-            if (books != null) {
-                return new ResponseEntity<>(books, HttpStatus.OK); // 200 OK, update successful
+                Books books = bookService.updateBookLogoById(id, file);
+                if (books != null) {
+                    return new ResponseEntity<>(books, HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<>("Book ID not found.", HttpStatus.NOT_FOUND);
+                }
             } else {
-                return new ResponseEntity<>("Book ID not found.", HttpStatus.NOT_FOUND); // 404 Not Found
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR); // 500 Internal Server Error
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    // TODO
     @PutMapping("/update/qty/{id}")
-    public ResponseEntity<?> changeBookQty(@PathVariable long id,@RequestPart("qty") int qty)
+    public ResponseEntity<?> changeBookQty(@RequestHeader("Authorization") String authHeader, @PathVariable long id,@RequestPart("qty") long qty)
     {
-        Books books = bookService.ChangeBookQuantity(id, qty);
-        if(books!=null)
+        User isAdmin=getAuthenticatedAdminUser(authHeader);
+        if(isAdmin!=null)
         {
-            return new ResponseEntity<>(books,HttpStatus.OK);
+            Books books = bookService.ChangeBookQuantity(id, qty);
+            if(books!=null)
+            {
+                return new ResponseEntity<>(books,HttpStatus.OK);
+            }
+            else
+            {
+                return new ResponseEntity<>("book id not found!!",HttpStatus.NOT_FOUND);
+            }
         }
         else
         {
-            return new ResponseEntity<>("book id not found!!",HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+    }
+
+    // TODO
+    @PutMapping("/update/price/{id}")
+    public ResponseEntity<?> changeBookPrice(@RequestHeader("Authorization") String authHeader, @PathVariable long id,@RequestPart("price") long price)
+    {
+
+        User isAdmin=getAuthenticatedAdminUser(authHeader);
+        if(isAdmin!=null )
+        {
+            Books books = bookService.ChangeBookPrice(id, price);
+            if(books!=null)
+            {
+                return new ResponseEntity<>(books,HttpStatus.OK);
+            }
+            else
+            {
+                return new ResponseEntity<>("book id not found!!",HttpStatus.NOT_FOUND);
+            }
+        }
+        else
+        {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
 
-    @PutMapping("/update/price/{id}")
-    public ResponseEntity<?> changeBookPrice(@PathVariable long id,@RequestPart("price") double price)
+    @PutMapping("/minusAddToCartQuantity/{id}")
+    public String minusAddToCartQuantity(@PathVariable Long id, @RequestPart Long qty)
     {
-        Books books = bookService.ChangeBookPrice(id, price);
-        if(books!=null)
-        {
-            return new ResponseEntity<>(books,HttpStatus.OK);
-        }
-        else
-        {
-            return new ResponseEntity<>("book id not found!!",HttpStatus.NOT_FOUND);
-        }
+        return bookService.minusAddToCartQuantity(id, qty);
+    }
+
+    @PutMapping("/removeFromCart/{id}")
+    public String removeFromCartAddToBook(@PathVariable Long id, @RequestPart Long qty)
+    {
+        return bookService.removeFromCartAddToBook(id,qty);
     }
 
 }
