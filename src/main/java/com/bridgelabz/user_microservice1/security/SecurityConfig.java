@@ -33,7 +33,7 @@ public class SecurityConfig
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(csrf->csrf.disable())
                 .authorizeRequests(ar->ar
-                        .requestMatchers("/user/register","/user/login","/user/forgot").permitAll()
+                        .requestMatchers("/user/register","/user/login","/user/forgot","/user/get").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

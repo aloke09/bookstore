@@ -55,7 +55,8 @@ public class UserServiceImpl implements UserService
         );
         if(authentication.isAuthenticated())
         {
-            return jwtService.generateToken(user.getEmail());
+            String token = jwtService.generateToken(user.getEmail());
+            return token;
         }
         return "Either E-mail or password is incorrect!!";
     }
@@ -103,5 +104,36 @@ public class UserServiceImpl implements UserService
         userRepository.save(user);
 
         return "Password successfully reset";
+    }
+
+    @Override
+    public UserDTO getUser(String token)
+    {
+        System.out.println("In reset password");
+
+
+
+        // Validate the token and extract the email
+        String email = jwtService.extractUserName(token);
+        System.out.println("Email: " + email);
+
+        if (email == null || userRepository.findByEmail(email)== null)
+        {
+            System.out.println("Invalid token or email");
+            return null;
+        }
+
+        // Fetch the user
+        User user = userRepository.findByEmail(email);
+        UserDTO dto=new UserDTO();
+        dto.setRole(user.getRole());
+        dto.setDob(user.getDob());
+        dto.setEmail(user.getEmail());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setRegistered_date(user.getRegistered_date());
+
+
+        return dto;
     }
 }

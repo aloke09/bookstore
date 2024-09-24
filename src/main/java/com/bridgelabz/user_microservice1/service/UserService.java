@@ -9,5 +9,6 @@ public interface UserService
     String login(User user);
     String forgotPassword(String email);
     String resetPassword(String token, String newPassword);
+    UserDTO getUser(String token);
 
 }

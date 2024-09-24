@@ -3,12 +3,17 @@ package com.bridgelabz.user_microservice1.controller;
 import com.bridgelabz.user_microservice1.DTO.UserDTO;
 import com.bridgelabz.user_microservice1.model.User;
 import com.bridgelabz.user_microservice1.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.method.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController
@@ -48,6 +53,31 @@ public class UserController
         else
         {
             return "Authorization header must contain a Bearer token";
+        }
+    }
+
+    @GetMapping("/get")
+    public ResponseEntity<UserDTO> getUser(@RequestParam("authHeader") String authHeader)
+    {
+        System.out.println(authHeader);
+        log.warn("warning!!!");
+        if (authHeader != null && authHeader.startsWith("Bearer "))
+        {
+            String token = authHeader.substring(7);
+            UserDTO u=service.getUser(token);
+            if(u!=null)
+            {
+                return new ResponseEntity<>(u, HttpStatus.OK);
+            }
+            else
+            {
+                return new ResponseEntity<>(null,HttpStatus.NOT_FOUND);
+            }
+
+        }
+        else
+        {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
     }
 
